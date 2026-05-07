@@ -625,7 +625,7 @@ const SUPABASE_URL = 'https://laomjhhhjoqybiplywhi.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_SdBRhD-eR7ofk-Y5YYXa-w_9R2uZIQe';
 // ============================================================
 
-let supabase;
+let supabaseClient;
 let inventory = [];
 let editingId = null;
 
@@ -643,7 +643,7 @@ window.onload = async () => {
   }
 
   document.getElementById('configBanner').style.display = 'none';
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   await loadData();
   subscribeRealtime();
 };
@@ -651,7 +651,7 @@ window.onload = async () => {
 // ─── DATA ───────────────────────────────────────────────────
 
 async function loadData() {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from('inventory')
     .select('*')
     .order('section').order('brand').order('product');
@@ -665,7 +665,7 @@ async function loadData() {
 }
 
 function subscribeRealtime() {
-  supabase.channel('inventory-changes')
+  supabaseClient.channel('inventory-changes')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, () => {
       loadData();
     })
@@ -792,7 +792,7 @@ function updateBrandFilter() {
 
 async function updateSold(id, val) {
   const sold = parseFloat(val) || 0;
-  const { error } = await supabase
+  const { error } = await supabaseClient
     .from('inventory')
     .update({ sold_stock: sold })
     .eq('id', id);
@@ -815,14 +815,14 @@ function editCell(td, id, field) {
 
 async function saveCell(input, id, field) {
   const val = parseFloat(input.value) || 0;
-  const { error } = await supabase.from('inventory').update({ [field]: val }).eq('id', id);
+  const { error } = await supabaseClient.from('inventory').update({ [field]: val }).eq('id', id);
   if (error) showToast('저장 실패', 'error');
   else { showToast('저장됨', 'success'); await loadData(); }
 }
 
 async function deleteItem(id) {
   if (!confirm('이 품목을 삭제하시겠습니까?')) return;
-  const { error } = await supabase.from('inventory').delete().eq('id', id);
+  const { error } = await supabaseClient.from('inventory').delete().eq('id', id);
   if (error) showToast('삭제 실패', 'error');
   else { showToast('삭제되었습니다', 'success'); await loadData(); }
 }
@@ -890,9 +890,9 @@ async function saveItem() {
 
   let error;
   if (editingId) {
-    ({ error } = await supabase.from('inventory').update(payload).eq('id', editingId));
+    ({ error } = await supabaseClient.from('inventory').update(payload).eq('id', editingId));
   } else {
-    ({ error } = await supabase.from('inventory').insert([payload]));
+    ({ error } = await supabaseClient.from('inventory').insert([payload]));
   }
 
   if (error) { showToast('저장 실패: ' + error.message, 'error'); return; }
@@ -938,7 +938,7 @@ async function saveSalesEntries() {
 
   if (!entries.length) { closeModal('salesModal'); return; }
 
-  const { error } = await supabase.from('daily_sales').insert(entries);
+  const { error } = await supabaseClient.from('daily_sales').insert(entries);
   if (error) { showToast('판매내역 저장 실패', 'error'); return; }
   showToast(`${entries.length}건 판매내역 저장 완료`, 'success');
   closeModal('salesModal');
@@ -950,7 +950,7 @@ async function doSnapshot() {
   if (!confirm('현재 재고를 일마감 스냅샷으로 저장하시겠습니까?')) return;
   const today = new Date().toISOString().split('T')[0];
 
-  const { error } = await supabase.from('daily_snapshot').insert([{
+  const { error } = await supabaseClient.from('daily_snapshot').insert([{
     snapshot_date: today,
     data: inventory
   }]);
@@ -961,7 +961,7 @@ async function doSnapshot() {
 
 async function openSnapshotModal() {
   document.getElementById('snapshotModal').classList.add('open');
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from('daily_snapshot')
     .select('id, snapshot_date, created_at')
     .order('snapshot_date', { ascending: false })
@@ -985,7 +985,7 @@ async function openSnapshotModal() {
 }
 
 async function viewSnapshot(id) {
-  const { data, error } = await supabase.from('daily_snapshot').select('*').eq('id', id).single();
+  const { data, error } = await supabaseClient.from('daily_snapshot').select('*').eq('id', id).single();
   if (error || !data) return;
   const items = data.data;
   const total = items.reduce((s,i) => s + (i.curr_stock||0), 0);
