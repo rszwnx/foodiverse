@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>푸디버스 재고관리</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #181c27;
+    --surface2: #1e2334;
+    --border: #2a3050;
+    --border2: #3a4468;
+    --accent: #4f8ef7;
+    --accent2: #6ee7b7;
+    --warn: #f97316;
+    --danger: #ef4444;
+    --text: #e8ecf4;
+    --text2: #8892aa;
+    --text3: #4a5578;
+    --green: #22c55e;
+    --yellow: #eab308;
+    --section-a: #1a2340;
+    --section-b: #1a2830;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 13px;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 52px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .logo {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.3px;
+  }
+  .live-badge {
+    display: flex; align-items: center; gap: 5px;
+    background: rgba(34,197,94,0.1);
+    border: 1px solid rgba(34,197,94,0.3);
+    color: var(--green);
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .live-dot {
+    width: 6px; height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .btn {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.15s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #3b7de8; }
+  .btn-success { background: var(--accent2); color: #0f2820; }
+  .btn-success:hover { background: #4dd4a0; }
+  .btn-ghost { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--border); color: var(--text); }
+  .btn-danger { background: rgba(239,68,68,0.15); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); }
+  .btn-danger:hover { background: rgba(239,68,68,0.25); }
+  .btn-warn { background: rgba(249,115,22,0.15); color: var(--warn); border: 1px solid rgba(249,115,22,0.3); }
+  .btn-warn:hover { background: rgba(249,115,22,0.25); }
+
+  /* SUMMARY BAR */
+  .summary-bar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 20px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .summary-item { display: flex; align-items: center; gap: 8px; }
+  .summary-label { color: var(--text3); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .summary-value { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 500; color: var(--text); }
+  .summary-value.accent { color: var(--accent); }
+  .summary-value.green { color: var(--green); }
+  .summary-value.warn { color: var(--warn); }
+  .summary-sep { width: 1px; height: 20px; background: var(--border); }
+
+  /* TOOLBAR */
+  .toolbar {
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .search-box {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+    max-width: 300px;
+  }
+  .search-box input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 7px 12px 7px 32px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: 'Noto Sans KR', sans-serif;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-box input:focus { border-color: var(--accent); }
+  .search-icon {
+    position: absolute;
+    left: 10px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text3);
+    font-size: 13px;
+  }
+  .filter-select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 7px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: 'Noto Sans KR', sans-serif;
+    outline: none;
+    cursor: pointer;
+  }
+  .filter-select:focus { border-color: var(--accent); }
+
+  /* TABLE CONTAINER */
+  .table-wrap {
+    padding: 0 20px 20px;
+    overflow-x: auto;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 0 6px;
+  }
+  .section-tag {
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .section-tag.general { background: rgba(79,142,247,0.15); color: var(--accent); border: 1px solid rgba(79,142,247,0.3); }
+  .section-tag.dak { background: rgba(234,179,8,0.15); color: var(--yellow); border: 1px solid rgba(234,179,8,0.3); }
+  .section-title { font-size: 13px; font-weight: 600; color: var(--text2); }
+  .section-count { font-size: 11px; color: var(--text3); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1100px;
+    font-size: 12px;
+  }
+  thead th {
+    background: var(--surface2);
+    color: var(--text3);
+    font-weight: 500;
+    font-size: 11px;
+    text-align: center;
+    padding: 7px 8px;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+    letter-spacing: 0.3px;
+    position: sticky;
+    top: 52px;
+  }
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  tbody tr:hover { background: rgba(79,142,247,0.04); }
+  tbody td {
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  .td-left { text-align: left; }
+  .td-mono { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+
+  /* Inline edit */
+  .editable-cell {
+    position: relative;
+    cursor: pointer;
+  }
+  .editable-cell:hover .cell-edit-hint { opacity: 1; }
+  .cell-edit-hint {
+    position: absolute;
+    right: 3px; top: 50%;
+    transform: translateY(-50%);
+    opacity: 0;
+    color: var(--accent);
+    font-size: 10px;
+    transition: opacity 0.15s;
+  }
+  .inline-input {
+    width: 100%;
+    background: rgba(79,142,247,0.08);
+    border: 1px solid var(--accent);
+    color: var(--text);
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    text-align: center;
+    outline: none;
+    min-width: 60px;
+  }
+
+  .sold-input {
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.4);
+    color: #fca5a5;
+    width: 70px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .sold-input:focus { border-color: var(--danger); }
+
+  .curr-stock { font-weight: 600; }
+  .curr-stock.low { color: var(--warn); }
+  .curr-stock.zero { color: var(--danger); }
+  .curr-stock.ok { color: var(--green); }
+
+  /* section row total */
+  .total-row td {
+    background: rgba(79,142,247,0.06);
+    font-weight: 600;
+    color: var(--accent);
+    border-top: 2px solid var(--accent);
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 24px;
+    width: 90%;
+    max-width: 560px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .modal-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .form-grid .full { grid-column: 1 / -1; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-label { font-size: 11px; color: var(--text3); font-weight: 500; text-transform: uppercase; letter-spacing: 0.4px; }
+  .form-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: 'Noto Sans KR', sans-serif;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-input:focus { border-color: var(--accent); }
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 20px;
+  }
+
+  /* SNAPSHOT MODAL */
+  .snapshot-list { display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; }
+  .snapshot-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .snapshot-item:hover { border-color: var(--accent); }
+  .snapshot-date { font-weight: 600; color: var(--accent); font-family: 'JetBrains Mono', monospace; }
+  .snapshot-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  /* TOAST */
+  .toast-container {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 300;
+  }
+  .toast {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: slideIn 0.2s ease;
+    max-width: 280px;
+  }
+  .toast.success { border-left: 3px solid var(--green); }
+  .toast.error { border-left: 3px solid var(--danger); }
+  .toast.info { border-left: 3px solid var(--accent); }
+  @keyframes slideIn { from { transform: translateX(20px); opacity:0; } to { transform: translateX(0); opacity:1; } }
+
+  /* DAILY SALES MODAL */
+  .sales-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .sales-table th { background: var(--surface2); padding: 7px; border: 1px solid var(--border); color: var(--text3); font-size: 11px; }
+  .sales-table td { padding: 6px 8px; border: 1px solid var(--border); text-align: center; }
+  .sales-input { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 4px 8px; border-radius: 4px; font-family: 'Noto Sans KR'; font-size: 12px; width: 100%; outline: none; }
+  .sales-input:focus { border-color: var(--accent); }
+
+  .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    color: var(--text3);
+    gap: 10px;
+    font-size: 13px;
+  }
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .config-banner {
+    background: rgba(249,115,22,0.1);
+    border: 1px solid rgba(249,115,22,0.4);
+    color: var(--warn);
+    padding: 12px 20px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .config-banner code {
+    background: rgba(249,115,22,0.15);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+  }
+  .row-actions { display: flex; gap: 4px; justify-content: center; }
+  .icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 3px 5px;
+    border-radius: 4px;
+    font-size: 12px;
+    transition: background 0.1s;
+    color: var(--text3);
+  }
+  .icon-btn:hover { background: var(--border); color: var(--text); }
+  .icon-btn.del:hover { background: rgba(239,68,68,0.15); color: var(--danger); }
+</style>
+</head>
+<body>
+
+<!-- CONFIG BANNER -->
+<div class="config-banner" id="configBanner">
+  ⚠️ Supabase 연결 설정이 필요합니다.
+  아래 코드에서 <code>SUPABASE_URL</code>과 <code>SUPABASE_ANON_KEY</code>를 교체하세요.
+</div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo">🥩 푸디버스 재고관리</div>
+    <div class="live-badge"><div class="live-dot"></div>실시간</div>
+    <span id="lastUpdated" style="color:var(--text3);font-size:11px;"></span>
+  </div>
+  <div class="header-right">
+    <button class="btn btn-ghost" onclick="openSnapshotModal()">📋 일마감 기록</button>
+    <button class="btn btn-warn" onclick="doSnapshot()">📸 일마감 저장</button>
+    <button class="btn btn-primary" onclick="openAddModal()">+ 품목 추가</button>
+  </div>
+</div>
+
+<!-- SUMMARY BAR -->
+<div class="summary-bar">
+  <div class="summary-item">
+    <span class="summary-label">전체 품목</span>
+    <span class="summary-value accent" id="sumTotal">-</span>
+  </div>
+  <div class="summary-sep"></div>
+  <div class="summary-item">
+    <span class="summary-label">현재고 합계</span>
+    <span class="summary-value green" id="sumCurr">-</span>
+  </div>
+  <div class="summary-sep"></div>
+  <div class="summary-item">
+    <span class="summary-label">총 중량</span>
+    <span class="summary-value" id="sumWeight">-</span>
+  </div>
+  <div class="summary-sep"></div>
+  <div class="summary-item">
+    <span class="summary-label">오늘 판매</span>
+    <span class="summary-value warn" id="sumSold">-</span>
+  </div>
+  <div class="summary-sep"></div>
+  <div class="summary-item">
+    <span class="summary-label">금일</span>
+    <span class="summary-value" id="todayDate" style="font-family:'JetBrains Mono',monospace;font-size:12px;">-</span>
+  </div>
+</div>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <div class="search-box">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="품목, 브랜드 검색..." oninput="renderTable()">
+  </div>
+  <select class="filter-select" id="sectionFilter" onchange="renderTable()">
+    <option value="">전체 섹션</option>
+    <option value="일반창고">일반창고</option>
+    <option value="닭소이야기">닭소이야기</option>
+  </select>
+  <select class="filter-select" id="brandFilter" onchange="renderTable()">
+    <option value="">전체 브랜드</option>
+  </select>
+  <button class="btn btn-ghost" onclick="exportExcel()">📥 엑셀 다운로드</button>
+</div>
+
+<!-- TABLE -->
+<div class="table-wrap" id="tableWrap">
+  <div class="loading"><div class="spinner"></div>데이터 로딩 중...</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">➕ 품목 추가</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">섹션</label>
+        <select class="form-input" id="fSection">
+          <option value="일반창고">일반창고</option>
+          <option value="닭소이야기">닭소이야기</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">브랜드</label>
+        <input class="form-input" id="fBrand" placeholder="예: EXCEL">
+      </div>
+      <div class="form-group full">
+        <label class="form-label">품목명 *</label>
+        <input class="form-input" id="fProduct" placeholder="품목명 입력">
+      </div>
+      <div class="form-group">
+        <label class="form-label">등급</label>
+        <input class="form-input" id="fGrade" placeholder="예: UN">
+      </div>
+      <div class="form-group">
+        <label class="form-label">EST</label>
+        <input class="form-input" id="fEst" placeholder="예: 86E">
+      </div>
+      <div class="form-group">
+        <label class="form-label">전재고 (박스)</label>
+        <input class="form-input" type="number" id="fPrevStock" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">평중 (kg/박스)</label>
+        <input class="form-input" type="number" step="0.01" id="fAvgWeight" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label class="form-label">판매가</label>
+        <input class="form-input" type="number" step="0.01" id="fSellPrice" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">기준가</label>
+        <input class="form-input" type="number" step="0.01" id="fBasePrice" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">소비기한</label>
+        <input class="form-input" type="date" id="fExpiry">
+      </div>
+      <div class="form-group">
+        <label class="form-label">창고입고일</label>
+        <input class="form-input" type="date" id="fWarehouseDate">
+      </div>
+      <div class="form-group">
+        <label class="form-label">B/L 번호</label>
+        <input class="form-input" id="fBl" placeholder="">
+      </div>
+      <div class="form-group">
+        <label class="form-label">파일번호</label>
+        <input class="form-input" id="fFile" placeholder="">
+      </div>
+      <div class="form-group full">
+        <label class="form-label">비고</label>
+        <input class="form-input" id="fNote" placeholder="">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('addModal')">취소</button>
+      <button class="btn btn-primary" onclick="saveItem()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- SNAPSHOT LIST MODAL -->
+<div class="modal-overlay" id="snapshotModal">
+  <div class="modal">
+    <div class="modal-title">📋 일마감 기록 조회</div>
+    <div class="snapshot-list" id="snapshotList">
+      <div class="loading"><div class="spinner"></div>로딩 중...</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('snapshotModal')">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- DAILY SALES MODAL -->
+<div class="modal-overlay" id="salesModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-title" id="salesModalTitle">📦 판매내역 입력</div>
+    <input type="hidden" id="salesInventoryId">
+    <div style="margin-bottom:12px;">
+      <button class="btn btn-ghost" style="font-size:11px" onclick="addSalesRow()">+ 거래처 추가</button>
+    </div>
+    <table class="sales-table">
+      <thead>
+        <tr>
+          <th>거래처</th>
+          <th>수량</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="salesRows"></tbody>
+    </table>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('salesModal')">취소</button>
+      <button class="btn btn-primary" onclick="saveSalesEntries()">저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// ⚙️ 설정: 아래 두 값을 Supabase에서 복사해서 교체하세요
+// ============================================================
+const SUPABASE_URL = 'https://laomjhhhjoqybiplywhi.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_SdBRhD-eR7ofk-Y5YYXa-w_9R2uZIQe';
+// ============================================================
+
+let supabase;
+let inventory = [];
+let editingId = null;
+
+// Init
+window.onload = async () => {
+  // Today date
+  const today = new Date();
+  document.getElementById('todayDate').textContent =
+    today.toLocaleDateString('ko-KR', {year:'numeric',month:'2-digit',day:'2-digit'});
+
+  if (SUPABASE_URL === 'YOUR_SUPABASE_URL') {
+    document.getElementById('configBanner').style.display = 'flex';
+    renderDemoTable();
+    return;
+  }
+
+  document.getElementById('configBanner').style.display = 'none';
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  await loadData();
+  subscribeRealtime();
+};
+
+// ─── DATA ───────────────────────────────────────────────────
+
+async function loadData() {
+  const { data, error } = await supabase
+    .from('inventory')
+    .select('*')
+    .order('section').order('brand').order('product');
+  if (error) { showToast('데이터 로드 실패: ' + error.message, 'error'); return; }
+  inventory = data || [];
+  updateBrandFilter();
+  renderTable();
+  updateSummary();
+  document.getElementById('lastUpdated').textContent =
+    '최종 업데이트: ' + new Date().toLocaleTimeString('ko-KR');
+}
+
+function subscribeRealtime() {
+  supabase.channel('inventory-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, () => {
+      loadData();
+    })
+    .subscribe();
+}
+
+// ─── RENDER ─────────────────────────────────────────────────
+
+function renderTable() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const secFilter = document.getElementById('sectionFilter').value;
+  const brandFilter = document.getElementById('brandFilter').value;
+
+  let filtered = inventory.filter(item => {
+    const matchSearch = !search ||
+      (item.product && item.product.toLowerCase().includes(search)) ||
+      (item.brand && item.brand.toLowerCase().includes(search));
+    const matchSec = !secFilter || item.section === secFilter;
+    const matchBrand = !brandFilter || item.brand === brandFilter;
+    return matchSearch && matchSec && matchBrand;
+  });
+
+  const sections = [...new Set(filtered.map(i => i.section))];
+  let html = '';
+
+  for (const section of sections) {
+    const items = filtered.filter(i => i.section === section);
+    const tagClass = section === '닭소이야기' ? 'dak' : 'general';
+    const totalCurr = items.reduce((s, i) => s + (i.curr_stock || 0), 0);
+    const totalWeight = items.reduce((s, i) => s + (i.total_weight || 0), 0);
+    const totalSold = items.reduce((s, i) => s + (i.sold_stock || 0), 0);
+
+    html += `<div class="section-header">
+      <span class="section-tag ${tagClass}">${section}</span>
+      <span class="section-title">재고 현황</span>
+      <span class="section-count">${items.length}개 품목</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>브랜드</th><th>품목</th><th>등급</th><th>EST</th>
+          <th>전재고</th><th>판매재고</th><th>현재고</th>
+          <th>평중(kg)</th><th>총중량(kg)</th>
+          <th>소비기한</th><th>창고입고일</th><th>B/L</th><th>비고</th>
+          <th>판매내역</th><th>액션</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+    for (const item of items) {
+      const curr = item.curr_stock ?? (item.prev_stock - item.sold_stock);
+      const totalW = item.total_weight ?? (curr * (item.avg_weight || 0));
+      const stockClass = curr <= 0 ? 'zero' : curr <= 10 ? 'low' : 'ok';
+
+      html += `<tr id="row-${item.id}">
+        <td class="td-left">${item.brand || ''}</td>
+        <td class="td-left" style="font-weight:500">${item.product}</td>
+        <td>${item.grade || ''}</td>
+        <td>${item.est || ''}</td>
+        <td class="td-mono">${item.prev_stock ?? 0}</td>
+        <td>
+          <input class="sold-input" type="number" min="0"
+            value="${item.sold_stock || 0}"
+            onchange="updateSold('${item.id}', this.value)"
+            title="판매수량 입력">
+        </td>
+        <td class="td-mono curr-stock ${stockClass}">${curr}</td>
+        <td class="td-mono editable-cell" onclick="editCell(this, '${item.id}', 'avg_weight')">
+          ${(item.avg_weight || 0).toFixed(2)}
+          <span class="cell-edit-hint">✏️</span>
+        </td>
+        <td class="td-mono" style="color:var(--accent2)">${totalW.toFixed(2)}</td>
+        <td style="color:${isExpiringSoon(item.expiry_date) ? 'var(--warn)' : 'inherit'}">${formatDate(item.expiry_date)}</td>
+        <td>${formatDate(item.warehouse_date)}</td>
+        <td class="td-mono" style="font-size:10px">${item.bl_number || ''}</td>
+        <td class="td-left" style="max-width:120px;overflow:hidden;text-overflow:ellipsis">${item.note || ''}</td>
+        <td>
+          <button class="icon-btn" onclick="openSalesModal('${item.id}','${(item.product||'').replace(/'/g,"\\'")}')">📝</button>
+        </td>
+        <td>
+          <div class="row-actions">
+            <button class="icon-btn" onclick="openEditModal('${item.id}')">✏️</button>
+            <button class="icon-btn del" onclick="deleteItem('${item.id}')">🗑️</button>
+          </div>
+        </td>
+      </tr>`;
+    }
+
+    html += `<tr class="total-row">
+      <td colspan="4" style="text-align:left;padding-left:12px">합계</td>
+      <td></td><td class="td-mono">${items.reduce((s,i)=>s+(i.sold_stock||0),0)}</td>
+      <td class="td-mono">${totalCurr}</td>
+      <td></td>
+      <td class="td-mono">${totalWeight.toFixed(2)}</td>
+      <td colspan="6"></td>
+    </tr>
+    </tbody></table>`;
+  }
+
+  if (!html) html = `<div class="loading">📭 검색 결과가 없습니다</div>`;
+  document.getElementById('tableWrap').innerHTML = html;
+}
+
+function updateSummary() {
+  const total = inventory.length;
+  const curr = inventory.reduce((s, i) => s + (i.curr_stock ?? (i.prev_stock - i.sold_stock)), 0);
+  const weight = inventory.reduce((s, i) => s + (i.total_weight || 0), 0);
+  const sold = inventory.reduce((s, i) => s + (i.sold_stock || 0), 0);
+  document.getElementById('sumTotal').textContent = total + '개';
+  document.getElementById('sumCurr').textContent = curr.toLocaleString() + ' 박스';
+  document.getElementById('sumWeight').textContent = weight.toLocaleString('ko', {maximumFractionDigits:1}) + ' kg';
+  document.getElementById('sumSold').textContent = sold.toLocaleString() + ' 박스';
+}
+
+function updateBrandFilter() {
+  const brands = [...new Set(inventory.map(i => i.brand).filter(Boolean))].sort();
+  const sel = document.getElementById('brandFilter');
+  const curr = sel.value;
+  sel.innerHTML = '<option value="">전체 브랜드</option>' +
+    brands.map(b => `<option value="${b}" ${b===curr?'selected':''}>${b}</option>`).join('');
+}
+
+// ─── ACTIONS ────────────────────────────────────────────────
+
+async function updateSold(id, val) {
+  const sold = parseFloat(val) || 0;
+  const { error } = await supabase
+    .from('inventory')
+    .update({ sold_stock: sold })
+    .eq('id', id);
+  if (error) {
+    showToast('저장 실패: ' + error.message, 'error');
+  } else {
+    showToast('판매재고 업데이트 완료', 'success');
+    await loadData();
+  }
+}
+
+function editCell(td, id, field) {
+  const current = td.textContent.trim().replace('✏️','').trim();
+  td.innerHTML = `<input class="inline-input" type="number" step="0.01"
+    value="${current}"
+    onblur="saveCell(this,'${id}','${field}')"
+    onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')loadData()">`;
+  td.querySelector('input').focus();
+}
+
+async function saveCell(input, id, field) {
+  const val = parseFloat(input.value) || 0;
+  const { error } = await supabase.from('inventory').update({ [field]: val }).eq('id', id);
+  if (error) showToast('저장 실패', 'error');
+  else { showToast('저장됨', 'success'); await loadData(); }
+}
+
+async function deleteItem(id) {
+  if (!confirm('이 품목을 삭제하시겠습니까?')) return;
+  const { error } = await supabase.from('inventory').delete().eq('id', id);
+  if (error) showToast('삭제 실패', 'error');
+  else { showToast('삭제되었습니다', 'success'); await loadData(); }
+}
+
+// ─── ADD / EDIT MODAL ───────────────────────────────────────
+
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = '➕ 품목 추가';
+  ['fBrand','fProduct','fGrade','fEst','fBl','fFile','fNote'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  ['fPrevStock','fAvgWeight','fSellPrice','fBasePrice'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  ['fExpiry','fWarehouseDate'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('fSection').value = '일반창고';
+  document.getElementById('addModal').classList.add('open');
+}
+
+function openEditModal(id) {
+  const item = inventory.find(i => i.id === id);
+  if (!item) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = '✏️ 품목 수정';
+  document.getElementById('fSection').value = item.section || '일반창고';
+  document.getElementById('fBrand').value = item.brand || '';
+  document.getElementById('fProduct').value = item.product || '';
+  document.getElementById('fGrade').value = item.grade || '';
+  document.getElementById('fEst').value = item.est || '';
+  document.getElementById('fPrevStock').value = item.prev_stock || '';
+  document.getElementById('fAvgWeight').value = item.avg_weight || '';
+  document.getElementById('fSellPrice').value = item.sell_price || '';
+  document.getElementById('fBasePrice').value = item.base_price || '';
+  document.getElementById('fExpiry').value = item.expiry_date || '';
+  document.getElementById('fWarehouseDate').value = item.warehouse_date || '';
+  document.getElementById('fBl').value = item.bl_number || '';
+  document.getElementById('fFile').value = item.file_number || '';
+  document.getElementById('fNote').value = item.note || '';
+  document.getElementById('addModal').classList.add('open');
+}
+
+async function saveItem() {
+  const product = document.getElementById('fProduct').value.trim();
+  if (!product) { showToast('품목명을 입력하세요', 'error'); return; }
+
+  const payload = {
+    section: document.getElementById('fSection').value,
+    brand: document.getElementById('fBrand').value.trim() || null,
+    product,
+    grade: document.getElementById('fGrade').value.trim() || null,
+    est: document.getElementById('fEst').value.trim() || null,
+    prev_stock: parseFloat(document.getElementById('fPrevStock').value) || 0,
+    avg_weight: parseFloat(document.getElementById('fAvgWeight').value) || 0,
+    sell_price: parseFloat(document.getElementById('fSellPrice').value) || null,
+    base_price: parseFloat(document.getElementById('fBasePrice').value) || null,
+    expiry_date: document.getElementById('fExpiry').value || null,
+    warehouse_date: document.getElementById('fWarehouseDate').value || null,
+    bl_number: document.getElementById('fBl').value.trim() || null,
+    file_number: document.getElementById('fFile').value.trim() || null,
+    note: document.getElementById('fNote').value.trim() || null,
+  };
+
+  let error;
+  if (editingId) {
+    ({ error } = await supabase.from('inventory').update(payload).eq('id', editingId));
+  } else {
+    ({ error } = await supabase.from('inventory').insert([payload]));
+  }
+
+  if (error) { showToast('저장 실패: ' + error.message, 'error'); return; }
+  showToast(editingId ? '수정 완료' : '추가 완료', 'success');
+  closeModal('addModal');
+  await loadData();
+}
+
+// ─── DAILY SALES ────────────────────────────────────────────
+
+function openSalesModal(inventoryId, productName) {
+  document.getElementById('salesInventoryId').value = inventoryId;
+  document.getElementById('salesModalTitle').textContent = `📦 판매내역 — ${productName}`;
+  document.getElementById('salesRows').innerHTML = '';
+  addSalesRow();
+  document.getElementById('salesModal').classList.add('open');
+}
+
+function addSalesRow() {
+  const tbody = document.getElementById('salesRows');
+  const today = new Date().toISOString().split('T')[0];
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input class="sales-input" type="text" placeholder="거래처명"></td>
+    <td><input class="sales-input" type="number" min="0" placeholder="0"></td>
+    <td><button class="icon-btn del" onclick="this.closest('tr').remove()">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+async function saveSalesEntries() {
+  const inventoryId = document.getElementById('salesInventoryId').value;
+  const rows = document.getElementById('salesRows').querySelectorAll('tr');
+  const today = new Date().toISOString().split('T')[0];
+  const entries = [];
+
+  for (const row of rows) {
+    const inputs = row.querySelectorAll('input');
+    const customer = inputs[0].value.trim();
+    const qty = parseFloat(inputs[1].value) || 0;
+    if (customer && qty > 0) entries.push({ inventory_id: inventoryId, sale_date: today, customer, quantity: qty });
+  }
+
+  if (!entries.length) { closeModal('salesModal'); return; }
+
+  const { error } = await supabase.from('daily_sales').insert(entries);
+  if (error) { showToast('판매내역 저장 실패', 'error'); return; }
+  showToast(`${entries.length}건 판매내역 저장 완료`, 'success');
+  closeModal('salesModal');
+}
+
+// ─── SNAPSHOT ───────────────────────────────────────────────
+
+async function doSnapshot() {
+  if (!confirm('현재 재고를 일마감 스냅샷으로 저장하시겠습니까?')) return;
+  const today = new Date().toISOString().split('T')[0];
+
+  const { error } = await supabase.from('daily_snapshot').insert([{
+    snapshot_date: today,
+    data: inventory
+  }]);
+
+  if (error) showToast('일마감 저장 실패: ' + error.message, 'error');
+  else showToast(`${today} 일마감 저장 완료 ✅`, 'success');
+}
+
+async function openSnapshotModal() {
+  document.getElementById('snapshotModal').classList.add('open');
+  const { data, error } = await supabase
+    .from('daily_snapshot')
+    .select('id, snapshot_date, created_at')
+    .order('snapshot_date', { ascending: false })
+    .limit(30);
+
+  if (error || !data?.length) {
+    document.getElementById('snapshotList').innerHTML =
+      '<div style="color:var(--text3);padding:20px;text-align:center">저장된 일마감 기록이 없습니다</div>';
+    return;
+  }
+
+  document.getElementById('snapshotList').innerHTML = data.map(s => `
+    <div class="snapshot-item" onclick="viewSnapshot('${s.id}')">
+      <div>
+        <div class="snapshot-date">${s.snapshot_date}</div>
+        <div class="snapshot-meta">저장시각: ${new Date(s.created_at).toLocaleString('ko-KR')}</div>
+      </div>
+      <span style="color:var(--accent);font-size:11px">조회 →</span>
+    </div>
+  `).join('');
+}
+
+async function viewSnapshot(id) {
+  const { data, error } = await supabase.from('daily_snapshot').select('*').eq('id', id).single();
+  if (error || !data) return;
+  const items = data.data;
+  const total = items.reduce((s,i) => s + (i.curr_stock||0), 0);
+  const weight = items.reduce((s,i) => s + (i.total_weight||0), 0);
+  alert(`📋 ${data.snapshot_date} 일마감\n\n총 ${items.length}개 품목\n현재고 합계: ${total}박스\n총중량: ${weight.toFixed(1)}kg`);
+}
+
+// ─── EXPORT ─────────────────────────────────────────────────
+
+function exportExcel() {
+  const rows = [['섹션','브랜드','품목','등급','EST','전재고','판매재고','현재고','평중','총중량(kg)','소비기한','창고입고일','B/L번호','비고']];
+  for (const i of inventory) {
+    const curr = i.curr_stock ?? (i.prev_stock - i.sold_stock);
+    rows.push([i.section,i.brand||'',i.product,i.grade||'',i.est||'',
+      i.prev_stock||0,i.sold_stock||0,curr,i.avg_weight||0,
+      i.total_weight?.toFixed(2)||(curr*(i.avg_weight||0)).toFixed(2),
+      i.expiry_date||'',i.warehouse_date||'',i.bl_number||'',i.note||'']);
+  }
+  const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  const bom = '\uFEFF';
+  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `푸디버스재고_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('엑셀 다운로드 완료', 'success');
+}
+
+// ─── DEMO MODE ──────────────────────────────────────────────
+
+function renderDemoTable() {
+  const demo = [
+    {id:'1',section:'일반창고',brand:'EXCEL',product:'스윙브레드',grade:'UN',est:'86E',prev_stock:12,sold_stock:0,curr_stock:12,avg_weight:9.98,total_weight:119.76,expiry_date:'2028-02-03',warehouse_date:'2026-04-28',bl_number:'I5470',note:''},
+    {id:'2',section:'일반창고',brand:'SWIFT',product:'암스지',grade:'UN',est:'3D',prev_stock:48,sold_stock:0,curr_stock:48,avg_weight:9.98,total_weight:479.04,expiry_date:'2026-06-05',warehouse_date:'2026-05-06',bl_number:'I6400',note:''},
+    {id:'3',section:'닭소이야기',brand:'WOODWARD',product:'작업사골',grade:'',est:'',prev_stock:61,sold_stock:59,curr_stock:2,avg_weight:10.00,total_weight:20.00,expiry_date:null,warehouse_date:'2026-03-18',bl_number:'I5452',note:'닭소이야기 59'},
+    {id:'4',section:'닭소이야기',brand:'VANROOI',product:'작업상갈',grade:'',est:'',prev_stock:70,sold_stock:55,curr_stock:15,avg_weight:15.00,total_weight:225.00,expiry_date:null,warehouse_date:'2026-04-22',bl_number:'I1006',note:'닭소이야기 55'},
+  ];
+  inventory = demo;
+  updateBrandFilter();
+  renderTable();
+  updateSummary();
+  document.getElementById('lastUpdated').textContent = '⚠️ 데모 모드 (Supabase 미연결)';
+}
+
+// ─── UTILS ──────────────────────────────────────────────────
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+
+function formatDate(d) {
+  if (!d) return '';
+  return new Date(d).toLocaleDateString('ko-KR', {year:'2-digit',month:'2-digit',day:'2-digit'});
+}
+
+function isExpiringSoon(d) {
+  if (!d) return false;
+  const diff = (new Date(d) - new Date()) / (1000*60*60*24);
+  return diff < 30;
+}
+
+function showToast(msg, type='info') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+</script>
+</body>
+</html>
