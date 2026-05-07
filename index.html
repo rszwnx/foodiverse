@@ -491,7 +491,7 @@
   <select class="filter-select" id="sectionFilter" onchange="renderTable()">
     <option value="">전체 섹션</option>
     <option value="일반창고">일반창고</option>
-    <option value="닭소이야기">닭소이야기</option>
+    <option value="담소이야기">담소이야기</option>
   </select>
   <select class="filter-select" id="brandFilter" onchange="renderTable()">
     <option value="">전체 브랜드</option>
@@ -516,7 +516,7 @@
         <label class="form-label">섹션</label>
         <select class="form-input" id="fSection">
           <option value="일반창고">일반창고</option>
-          <option value="닭소이야기">닭소이야기</option>
+          <option value="담소이야기">담소이야기</option>
         </select>
       </div>
       <div class="form-group">
@@ -693,7 +693,7 @@ function renderTable() {
 
   for (const section of sections) {
     const items = filtered.filter(i => i.section === section);
-    const tagClass = section === '닭소이야기' ? 'dak' : 'general';
+    const tagClass = section === '담소이야기' ? 'dak' : 'general';
     const totalCurr = items.reduce((s, i) => s + (i.curr_stock || 0), 0);
     const totalWeight = items.reduce((s, i) => s + (i.total_weight || 0), 0);
     const totalSold = items.reduce((s, i) => s + (i.sold_stock || 0), 0);
@@ -1022,8 +1022,8 @@ function renderDemoTable() {
   const demo = [
     {id:'1',section:'일반창고',brand:'EXCEL',product:'스윙브레드',grade:'UN',est:'86E',prev_stock:12,sold_stock:0,curr_stock:12,avg_weight:9.98,total_weight:119.76,expiry_date:'2028-02-03',warehouse_date:'2026-04-28',bl_number:'I5470',note:''},
     {id:'2',section:'일반창고',brand:'SWIFT',product:'암스지',grade:'UN',est:'3D',prev_stock:48,sold_stock:0,curr_stock:48,avg_weight:9.98,total_weight:479.04,expiry_date:'2026-06-05',warehouse_date:'2026-05-06',bl_number:'I6400',note:''},
-    {id:'3',section:'닭소이야기',brand:'WOODWARD',product:'작업사골',grade:'',est:'',prev_stock:61,sold_stock:59,curr_stock:2,avg_weight:10.00,total_weight:20.00,expiry_date:null,warehouse_date:'2026-03-18',bl_number:'I5452',note:'닭소이야기 59'},
-    {id:'4',section:'닭소이야기',brand:'VANROOI',product:'작업상갈',grade:'',est:'',prev_stock:70,sold_stock:55,curr_stock:15,avg_weight:15.00,total_weight:225.00,expiry_date:null,warehouse_date:'2026-04-22',bl_number:'I1006',note:'닭소이야기 55'},
+    {id:'3',section:'담소이야기',brand:'WOODWARD',product:'작업사골',grade:'',est:'',prev_stock:61,sold_stock:59,curr_stock:2,avg_weight:10.00,total_weight:20.00,expiry_date:null,warehouse_date:'2026-03-18',bl_number:'I5452',note:'담소이야기 59'},
+    {id:'4',section:'담소이야기',brand:'VANROOI',product:'작업상갈',grade:'',est:'',prev_stock:70,sold_stock:55,curr_stock:15,avg_weight:15.00,total_weight:225.00,expiry_date:null,warehouse_date:'2026-04-22',bl_number:'I1006',note:'담소이야기 55'},
   ];
   inventory = demo;
   updateBrandFilter();
