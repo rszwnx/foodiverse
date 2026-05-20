@@ -6,25 +6,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>푸디버스 재고관리</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0f1117;
-    --surface: #181c27;
-    --surface2: #1e2334;
-    --border: #2a3050;
-    --border2: #3a4468;
-    --accent: #4f8ef7;
-    --accent2: #6ee7b7;
-    --warn: #f97316;
-    --danger: #ef4444;
-    --text: #e8ecf4;
-    --text2: #8892aa;
-    --text3: #4a5578;
-    --green: #22c55e;
-    --yellow: #eab308;
-    --section-a: #1a2340;
-    --section-b: #1a2830;
+    --bg: #f5f6fa;
+    --surface: #ffffff;
+    --surface2: #f0f2f8;
+    --border: #dde1ef;
+    --border2: #c5cce0;
+    --accent: #2563eb;
+    --accent2: #059669;
+    --warn: #ea580c;
+    --danger: #dc2626;
+    --text: #1e2235;
+    --text2: #4a5578;
+    --text3: #8892aa;
+    --green: #16a34a;
+    --yellow: #ca8a04;
+    --section-a: #eff4ff;
+    --section-b: #f0fdf4;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -107,7 +107,7 @@
   }
   .summary-item { display: flex; align-items: center; gap: 8px; }
   .summary-label { color: var(--text3); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .summary-value { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 500; color: var(--text); }
+  .summary-value { font-family: 'Noto Sans KR', sans-serif; font-size: 14px; font-weight: 500; color: var(--text); }
   .summary-value.accent { color: var(--accent); }
   .summary-value.green { color: var(--green); }
   .summary-value.warn { color: var(--warn); }
@@ -180,6 +180,7 @@
   }
   .section-tag.general { background: rgba(79,142,247,0.15); color: var(--accent); border: 1px solid rgba(79,142,247,0.3); }
   .section-tag.dak { background: rgba(234,179,8,0.15); color: var(--yellow); border: 1px solid rgba(234,179,8,0.3); }
+  .section-tag.bose { background: rgba(139,92,246,0.15); color: #7c3aed; border: 1px solid rgba(139,92,246,0.3); }
   .section-title { font-size: 13px; font-weight: 600; color: var(--text2); }
   .section-count { font-size: 11px; color: var(--text3); }
 
@@ -215,7 +216,7 @@
     white-space: nowrap;
   }
   .td-left { text-align: left; }
-  .td-mono { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+  .td-mono { font-family: 'Noto Sans KR', sans-serif; font-size: 11px; }
 
   /* Inline edit */
   .editable-cell {
@@ -240,7 +241,7 @@
     padding: 3px 6px;
     border-radius: 4px;
     font-size: 12px;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Noto Sans KR', sans-serif;
     text-align: center;
     outline: none;
     min-width: 60px;
@@ -254,7 +255,7 @@
     padding: 4px 6px;
     border-radius: 4px;
     font-size: 12px;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Noto Sans KR', sans-serif;
     text-align: center;
     outline: none;
     transition: border-color 0.15s;
@@ -345,7 +346,7 @@
     transition: border-color 0.15s;
   }
   .snapshot-item:hover { border-color: var(--accent); }
-  .snapshot-date { font-weight: 600; color: var(--accent); font-family: 'JetBrains Mono', monospace; }
+  .snapshot-date { font-weight: 600; color: var(--accent); font-family: 'Noto Sans KR', sans-serif; }
   .snapshot-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
 
   /* TOAST */
@@ -414,7 +415,7 @@
     background: rgba(249,115,22,0.15);
     padding: 1px 6px;
     border-radius: 3px;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Noto Sans KR', sans-serif;
     font-size: 11px;
   }
   .row-actions { display: flex; gap: 4px; justify-content: center; }
@@ -443,13 +444,14 @@
 <!-- HEADER -->
 <div class="header">
   <div class="header-left">
-    <div class="logo">🥩 푸디버스 재고관리</div>
+    <div class="logo" onclick="checkAdmin()" style="cursor:pointer" title="관리자 로그인">🥩 푸디버스 재고관리</div>
     <div class="live-badge"><div class="live-dot"></div>실시간</div>
     <span id="lastUpdated" style="color:var(--text3);font-size:11px;"></span>
   </div>
   <div class="header-right">
     <button class="btn btn-ghost" onclick="openSnapshotModal()">📋 일마감 기록</button>
     <button class="btn btn-warn" onclick="doSnapshot()">📸 일마감 저장</button>
+    <button class="btn btn-ghost" id="lockBtn" onclick="toggleLock()" style="display:none">🔒 수정 잠금</button>
     <button class="btn btn-primary" onclick="openAddModal()">+ 품목 추가</button>
   </div>
 </div>
@@ -478,7 +480,7 @@
   <div class="summary-sep"></div>
   <div class="summary-item">
     <span class="summary-label">금일</span>
-    <span class="summary-value" id="todayDate" style="font-family:'JetBrains Mono',monospace;font-size:12px;">-</span>
+    <span class="summary-value" id="todayDate" style="font-family:'Noto Sans KR',sans-serif;font-size:13px;">-</span>
   </div>
 </div>
 
@@ -505,6 +507,16 @@
 </div>
 
 <!-- TOAST -->
+
+<!-- LOCK OVERLAY -->
+<div id="lockOverlay" style="display:none;position:fixed;inset:0;z-index:500;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);background:rgba(255,255,255,0.6);align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+  <div style="background:#fff;border:1px solid #dde1ef;border-radius:16px;padding:36px 48px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.12);">
+    <div style="font-size:48px;margin-bottom:12px;">🔒</div>
+    <div style="font-size:18px;font-weight:700;color:#1e2235;margin-bottom:8px;">관리자 수정 중입니다</div>
+    <div style="font-size:13px;color:#4a5578;">잠시 후 다시 시도해주세요.</div>
+  </div>
+</div>
+
 <div class="toast-container" id="toastContainer"></div>
 
 <!-- ADD/EDIT MODAL -->
@@ -622,12 +634,63 @@
 // ⚙️ 설정: 아래 두 값을 Supabase에서 복사해서 교체하세요
 // ============================================================
 const SUPABASE_URL = 'https://laomjhhhjoqybiplywhi.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_SdBRhD-eR7ofk-Y5YYXa-w_9R2uZIQe';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxhb21qaGhoam9xeWJpcGx5d2hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjk4MDgsImV4cCI6MjA5MzcwNTgwOH0.-CxOyA6czVF6Rub_5QvOZg_oQFfdVj2xhM2bvtbPSSk';
 // ============================================================
 
 let supabaseClient;
 let inventory = [];
 let editingId = null;
+// ============================================================
+// 🔑 관리자 비밀번호 설정
+// ============================================================
+const ADMIN_PASSWORD = '1234'; // ← 원하는 비밀번호로 변경하세요
+// ============================================================
+
+let isAdmin = false;
+let isLocked = false;
+let lockChannel = null;
+
+function checkAdmin() {
+  const pw = prompt('관리자 비밀번호를 입력하세요:');
+  if (pw === ADMIN_PASSWORD) {
+    isAdmin = true;
+    document.getElementById('lockBtn').style.display = 'flex';
+    showToast('관리자 모드 활성화', 'success');
+  } else if (pw !== null) {
+    showToast('비밀번호가 틀렸습니다', 'error');
+  }
+}
+
+async function toggleLock() {
+  if (!isAdmin) return;
+  isLocked = !isLocked;
+  const btn = document.getElementById('lockBtn');
+  btn.textContent = isLocked ? '🔓 잠금 해제' : '🔒 수정 잠금';
+  btn.className = isLocked ? 'btn btn-danger' : 'btn btn-ghost';
+
+  // Supabase에 잠금 상태 저장
+  await supabaseClient.from('app_settings').upsert({ key: 'locked', value: isLocked ? 'true' : 'false' });
+  showToast(isLocked ? '🔒 수정 잠금 ON — 다른 사용자 접근 차단됨' : '🔓 잠금 해제됨', isLocked ? 'error' : 'success');
+}
+
+async function checkLockStatus() {
+  if (isAdmin) return; // 관리자는 잠금 무시
+  const { data } = await supabaseClient.from('app_settings').select('value').eq('key', 'locked').single();
+  const locked = data?.value === 'true';
+  const overlay = document.getElementById('lockOverlay');
+  overlay.style.display = locked ? 'flex' : 'none';
+}
+
+function subscribeLock() {
+  supabaseClient.channel('lock-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'app_settings' }, () => {
+      checkLockStatus();
+    })
+    .subscribe();
+}
+
+let sortField = null;
+let sortDir = 1;
 
 // Init
 window.onload = async () => {
@@ -646,6 +709,8 @@ window.onload = async () => {
   supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   await loadData();
   subscribeRealtime();
+  await checkLockStatus();
+  subscribeLock();
 };
 
 // ─── DATA ───────────────────────────────────────────────────
@@ -674,6 +739,13 @@ function subscribeRealtime() {
 
 // ─── RENDER ─────────────────────────────────────────────────
 
+
+function sortBy(field) {
+  if (sortField === field) sortDir *= -1;
+  else { sortField = field; sortDir = 1; }
+  renderTable();
+}
+
 function renderTable() {
   const search = document.getElementById('searchInput').value.toLowerCase();
   const secFilter = document.getElementById('sectionFilter').value;
@@ -688,12 +760,19 @@ function renderTable() {
     return matchSearch && matchSec && matchBrand;
   });
 
-  const sections = [...new Set(filtered.map(i => i.section))];
+  const SECTION_ORDER = ['푸디버스', '보세창고 외', '담소이야기'];
   let html = '';
 
-  for (const section of sections) {
-    const items = filtered.filter(i => i.section === section);
-    const tagClass = section === '담소이야기' ? 'dak' : 'general';
+  for (const section of SECTION_ORDER) {
+    let items = filtered.filter(i => i.section === section);
+    if (sortField) {
+      items = [...items].sort((a,b) => {
+        const av = (a[sortField]||'').toString().toLowerCase();
+        const bv = (b[sortField]||'').toString().toLowerCase();
+        return av < bv ? -sortDir : av > bv ? sortDir : 0;
+      });
+    }
+    const tagClass = section === '담소이야기' ? 'dak' : section === '보세창고 외' ? 'bose' : 'general';
     const totalCurr = items.reduce((s, i) => s + (i.curr_stock || 0), 0);
     const totalWeight = items.reduce((s, i) => s + (i.total_weight || 0), 0);
     const totalSold = items.reduce((s, i) => s + (i.sold_stock || 0), 0);
@@ -706,7 +785,9 @@ function renderTable() {
     <table>
       <thead>
         <tr>
-          <th>브랜드</th><th>품목</th><th>등급</th><th>EST</th>
+          <th>원산지</th><th>브랜드</th>
+          <th style="cursor:pointer;user-select:none" onclick="sortBy('product')">품목 ⇅</th>
+          <th>등급</th><th>EST</th>
           <th>전재고</th><th>판매재고</th><th>현재고</th>
           <th>평중(kg)</th><th>총중량(kg)</th>
           <th>소비기한</th><th>창고입고일</th><th>B/L</th><th>비고</th>
@@ -721,6 +802,7 @@ function renderTable() {
       const stockClass = curr <= 0 ? 'zero' : curr <= 10 ? 'low' : 'ok';
 
       html += `<tr id="row-${item.id}">
+        <td>${item.origin || ''}</td>
         <td class="td-left">${item.brand || ''}</td>
         <td class="td-left" style="font-weight:500">${item.product}</td>
         <td>${item.grade || ''}</td>
@@ -755,7 +837,7 @@ function renderTable() {
     }
 
     html += `<tr class="total-row">
-      <td colspan="4" style="text-align:left;padding-left:12px">합계</td>
+      <td colspan="5" style="text-align:left;padding-left:12px">합계</td>
       <td></td><td class="td-mono">${items.reduce((s,i)=>s+(i.sold_stock||0),0)}</td>
       <td class="td-mono">${totalCurr}</td>
       <td></td>
@@ -832,7 +914,7 @@ async function deleteItem(id) {
 function openAddModal() {
   editingId = null;
   document.getElementById('modalTitle').textContent = '➕ 품목 추가';
-  ['fBrand','fProduct','fGrade','fEst','fBl','fFile','fNote'].forEach(id => {
+  ['fOrigin','fBrand','fProduct','fGrade','fEst','fBl','fFile','fNote'].forEach(id => {
     document.getElementById(id).value = '';
   });
   ['fPrevStock','fAvgWeight','fSellPrice','fBasePrice'].forEach(id => {
@@ -873,6 +955,7 @@ async function saveItem() {
 
   const payload = {
     section: document.getElementById('fSection').value,
+    origin: document.getElementById('fOrigin').value.trim() || null,
     brand: document.getElementById('fBrand').value.trim() || null,
     product,
     grade: document.getElementById('fGrade').value.trim() || null,
@@ -1020,8 +1103,8 @@ function exportExcel() {
 
 function renderDemoTable() {
   const demo = [
-    {id:'1',section:'일반창고',brand:'EXCEL',product:'스윙브레드',grade:'UN',est:'86E',prev_stock:12,sold_stock:0,curr_stock:12,avg_weight:9.98,total_weight:119.76,expiry_date:'2028-02-03',warehouse_date:'2026-04-28',bl_number:'I5470',note:''},
-    {id:'2',section:'일반창고',brand:'SWIFT',product:'암스지',grade:'UN',est:'3D',prev_stock:48,sold_stock:0,curr_stock:48,avg_weight:9.98,total_weight:479.04,expiry_date:'2026-06-05',warehouse_date:'2026-05-06',bl_number:'I6400',note:''},
+    {id:'1',section:'푸디버스',brand:'EXCEL',product:'스윙브레드',grade:'UN',est:'86E',prev_stock:12,sold_stock:0,curr_stock:12,avg_weight:9.98,total_weight:119.76,expiry_date:'2028-02-03',warehouse_date:'2026-04-28',bl_number:'I5470',note:''},
+    {id:'2',section:'푸디버스',brand:'SWIFT',product:'암스지',grade:'UN',est:'3D',prev_stock:48,sold_stock:0,curr_stock:48,avg_weight:9.98,total_weight:479.04,expiry_date:'2026-06-05',warehouse_date:'2026-05-06',bl_number:'I6400',note:''},
     {id:'3',section:'담소이야기',brand:'WOODWARD',product:'작업사골',grade:'',est:'',prev_stock:61,sold_stock:59,curr_stock:2,avg_weight:10.00,total_weight:20.00,expiry_date:null,warehouse_date:'2026-03-18',bl_number:'I5452',note:'담소이야기 59'},
     {id:'4',section:'담소이야기',brand:'VANROOI',product:'작업상갈',grade:'',est:'',prev_stock:70,sold_stock:55,curr_stock:15,avg_weight:15.00,total_weight:225.00,expiry_date:null,warehouse_date:'2026-04-22',bl_number:'I1006',note:'담소이야기 55'},
   ];
@@ -1042,7 +1125,11 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
 
 function formatDate(d) {
   if (!d) return '';
-  return new Date(d).toLocaleDateString('ko-KR', {year:'2-digit',month:'2-digit',day:'2-digit'});
+  const dt = new Date(d);
+  const yy = String(dt.getFullYear()).slice(2);
+  const mm = String(dt.getMonth()+1).padStart(2,'0');
+  const dd = String(dt.getDate()).padStart(2,'0');
+  return `${yy}-${mm}-${dd}`;
 }
 
 function isExpiringSoon(d) {
